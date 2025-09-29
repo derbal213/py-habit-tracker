@@ -1,6 +1,5 @@
 import pytest
 from app.database.models import Task
-from sqlalchemy.exc import IntegrityError
 
 def test_insert_baseline():
     task = Task(name="test_insert", description="This is a test task for testing inserts", point_value=3)
@@ -37,4 +36,4 @@ def test_valid_name_then_remove_name():
 def test_valid_point_then_invalid_point():
     task = Task(name="Change Point Test", description="This is a test for changing point_value to an invalid value", point_value = 3)
     with pytest.raises(TypeError):
-        task.point_value = "str"
+        task.point_value = "str"  # pyright: ignore[reportAttributeAccessIssue]

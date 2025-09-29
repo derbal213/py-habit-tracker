@@ -2,8 +2,8 @@ import logging
 from .db_consts import SessionLocal
 from datetime import datetime, timezone
 from typing import ClassVar, override
-from pydantic import StrictInt, validator
-from sqlmodel import SQLModel, Field, CheckConstraint, select, Column, VARCHAR, INTEGER
+from pydantic import StrictInt
+from sqlmodel import SQLModel, Field, CheckConstraint, Column, VARCHAR
 
 class BaseModel(SQLModel):
     # Specifies the set of index elements which represent the ON CONFLICT target

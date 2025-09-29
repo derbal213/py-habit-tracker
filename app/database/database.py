@@ -20,7 +20,7 @@ def test() -> None:
     print(new_task)
     new_task.upsert()
     
-    task = Task(description="This test is missing a name", point_value=3)  # pyright: ignore[reportCallIssue]
+    task = Task(description="This test is missing a name", point_value=3)
     task.upsert()
 
 def query_tasks(
