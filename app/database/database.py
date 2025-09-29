@@ -2,6 +2,7 @@ from .models import Task
 from .db_consts import SessionLocal, engine
 from sqlmodel import SQLModel, select
 from sqlalchemy.sql.elements import BinaryExpression
+from typing import Any
 
 def test() -> None:
     try:
@@ -10,7 +11,7 @@ def test() -> None:
     except ValueError as ve:
         print(ve)
     
-    tasks: list[Task] = query_tasks(point_value=[1])
+    tasks: list[Task] = query_tasks(point_values=[1])
     for t in tasks:
         print(t)
         
@@ -25,19 +26,29 @@ def test() -> None:
     task.insert()
 
 def query_tasks(
-        id: list[int] | None = None, 
-        name: list[str] | None = None, 
-        point_value: list[int] | None = None) -> list[Task]:    
+        ids: int | list[int] | None = None, 
+        names: str | list[str] | None = None, 
+        point_values: int | list[int] | None = None) -> list[Task]:
+    
+    def ensure_list(value: Any) -> list[Any] | None:  # pyright: ignore[reportExplicitAny]
+        if value is None:
+            return None
+        return value if isinstance(value, list) else [value]  # pyright: ignore[reportUnknownVariableType]
+    
+    ids = ensure_list(ids)
+    names = ensure_list(names)
+    point_values = ensure_list(point_values)
+    
     with SessionLocal() as session:
         statement = select(Task)
         filters: list[BinaryExpression[bool]] = []
 
-        if id:
-            filters.append(Task.id.in_(id))    # pyright: ignore[reportAttributeAccessIssue, reportUnknownMemberType, reportUnknownArgumentType]
-        if name:
-            filters.append(Task.name.in_(name))  # pyright: ignore[reportAttributeAccessIssue, reportUnknownMemberType, reportUnknownArgumentType]
-        if point_value:
-            filters.append(Task.point_value.in_(point_value))  # pyright: ignore[reportAttributeAccessIssue, reportUnknownMemberType, reportUnknownArgumentType]
+        if ids:
+            filters.append(Task.id.in_(ids))    # pyright: ignore[reportAttributeAccessIssue, reportUnknownMemberType, reportUnknownArgumentType]
+        if names:
+            filters.append(Task.name.in_(names))  # pyright: ignore[reportAttributeAccessIssue, reportUnknownMemberType, reportUnknownArgumentType]
+        if point_values:
+            filters.append(Task.point_value.in_(point_values))  # pyright: ignore[reportAttributeAccessIssue, reportUnknownMemberType, reportUnknownArgumentType]
 
         if filters:
             statement = statement.where(*filters)
