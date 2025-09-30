@@ -1,8 +1,8 @@
 import logging
-from .db_consts import SessionLocal
+from .db_consts import SessionLocal, days_of_week
 from datetime import datetime, timezone
 from typing import override
-from pydantic import StrictInt
+from pydantic import StrictInt, field_validator, validator
 from sqlmodel import SQLModel, Field, CheckConstraint, Column, VARCHAR, DateTime, text
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.schema import FetchedValue
@@ -12,16 +12,7 @@ class BaseModel(SQLModel):
     created_at: datetime = Field(
         default_factory=lambda: datetime.now(timezone.utc)
     )
-    updated_at: datetime = Field(
-        sa_column=Column(
-            DateTime(timezone=True),
-            server_default=text("(CURRENT_TIMESTAMP)"),
-            server_onupdate=text("(CURRENT_TIMESTAMP)"),
-            nullable=False,
-            default=None,
-            onupdate=None
-        )
-    )
+    
 
     def upsert(self) -> None:
         try:
@@ -31,12 +22,23 @@ class BaseModel(SQLModel):
                 session.refresh(self)
         except IntegrityError as ie:
             logging.warning(f"Integrity error while upserting {self}. Error: {ie}")
-            raise ie
+            raise
     
 class Task(BaseModel, table=True):    
     name: str = Field(sa_column=Column("name", VARCHAR, unique=True, index=True, nullable=False))
     description: str|None = None
     point_value: StrictInt = Field(default=0, nullable=False)
+    updated_at: datetime = Field(
+        default=None,
+        sa_column=Column(
+            DateTime(timezone=True),
+            server_default=text("(CURRENT_TIMESTAMP)"),
+            server_onupdate=text("(CURRENT_TIMESTAMP)"),
+            nullable=False,
+            default=None,
+            onupdate=None
+        )
+    )
 
     __table_args__: tuple[object] = (CheckConstraint("typeof(point_value) = 'integer'", name="check_point_value_int"), )
     
@@ -57,3 +59,18 @@ class Task(BaseModel, table=True):
         if name == "name" and (value is None or (isinstance(value, str) and value.strip() == "")):
             raise ValueError(f"{name} must not be empty/none, got {value}")
         super().__setattr__(name, value)
+        
+class Schedule(BaseModel, table=True):
+    day_of_week: days_of_week = Field(default=days_of_week.SUNDAY, sa_column_kwargs={"nullable": False})
+    task_id: int = Field(nullable=False, foreign_key="task.id")
+    updated_at: datetime = Field(
+        default=None,
+        sa_column=Column(
+            DateTime(timezone=True),
+            server_default=text("(CURRENT_TIMESTAMP)"),
+            server_onupdate=text("(CURRENT_TIMESTAMP)"),
+            nullable=False,
+            default=None,
+            onupdate=None
+        )
+    )

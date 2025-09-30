@@ -1,5 +1,5 @@
-from .models import Task
-from .db_consts import SessionLocal, engine
+from .models import Task, Schedule
+from .db_consts import SessionLocal, engine, days_of_week
 from sqlmodel import SQLModel, select
 from sqlalchemy.sql.elements import BinaryExpression
 from typing import Any
@@ -25,15 +25,16 @@ def test() -> None:
     task = Task(description="This test is missing a name", point_value=3)
     task.upsert()
 
+def ensure_list(value: Any) -> list[Any] | None:  # pyright: ignore[reportExplicitAny]
+    if value is None:
+        return None
+    return value if isinstance(value, list) else [value]  # pyright: ignore[reportUnknownVariableType]
+
+
 def query_tasks(
         ids: int | list[int] | None = None, 
         names: str | list[str] | None = None, 
         point_values: int | list[int] | None = None) -> list[Task]:
-    
-    def ensure_list(value: Any) -> list[Any] | None:  # pyright: ignore[reportExplicitAny]
-        if value is None:
-            return None
-        return value if isinstance(value, list) else [value]  # pyright: ignore[reportUnknownVariableType]
     
     ids = ensure_list(ids)
     names = ensure_list(names)
@@ -56,6 +57,24 @@ def query_tasks(
         results = session.execute(statement)
         
         return list(results.scalars().all())
+    
+def query_schedule(task_ids: int|list[int]|None = None, days: days_of_week|list[days_of_week]|None = None):
+    days = ensure_list(days)
+    task_ids = ensure_list(task_ids)
+    with SessionLocal() as session:
+        statement = select(Schedule)
+        filters: list[BinaryExpression[bool]] = []
+        if task_ids:
+            filters.append(Schedule.task_id.in_(task_ids))  # pyright: ignore[reportAttributeAccessIssue]
+        if days:
+            filters.append(Schedule.day_of_week.in_(days))  # pyright: ignore[reportAttributeAccessIssue]
+        
+        if filters:
+            statement = statement.where(*filters)
+            
+        results = session.execute(statement)
+        return list(results.scalars().all())
+        
 
 def main() -> None:
     SQLModel.metadata.create_all(engine)
