@@ -11,6 +11,7 @@ class BaseModel(SQLModel):
     created_at: datetime = Field(
         default_factory=lambda: datetime.now(timezone.utc)
     )
+    archived: bool = False
 
     def upsert(self) -> None:
         try:
@@ -71,3 +72,9 @@ class Schedule(BaseModel, table=True):
             onupdate=None
         )
     )
+    
+class Reward(BaseModel, table=True):
+    name: str = Field(sa_column=Column("name", VARCHAR, index=True, nullable=False))
+    description: str|None = None
+    point_cost: StrictInt = Field(default=0, nullable=False)
+    repeatable: bool = False
