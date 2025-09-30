@@ -23,7 +23,7 @@ class BaseModel(SQLModel):
         )
     )
 
-    def insert(self):
+    def upsert(self) -> None:
         try:
             with SessionLocal() as session:
                 session.add(self)
@@ -32,9 +32,6 @@ class BaseModel(SQLModel):
         except IntegrityError as ie:
             logging.warning(f"Integrity error while upserting {self}. Error: {ie}")
             raise ie
-    
-    def update(self) -> object:
-        raise NotImplementedError("Todo")
     
 class Task(BaseModel, table=True):    
     name: str = Field(sa_column=Column("name", VARCHAR, unique=True, index=True, nullable=False))

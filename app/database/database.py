@@ -7,7 +7,7 @@ from typing import Any
 def test() -> None:
     try:
         task: Task = Task(name="Take out trash", point_value=1)
-        task.insert()
+        task.upsert()
     except ValueError as ve:
         print(ve)
     
@@ -20,10 +20,10 @@ def test() -> None:
     new_task.point_value = 2
     print()
     print(new_task)
-    new_task.insert()
+    new_task.upsert()
     
     task = Task(description="This test is missing a name", point_value=3)
-    task.insert()
+    task.upsert()
 
 def query_tasks(
         ids: int | list[int] | None = None, 

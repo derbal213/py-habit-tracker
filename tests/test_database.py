@@ -6,8 +6,8 @@ def test_task_query():
     # First insert the record we need since we're working in memory
     task: Task = Task(name="test_select", description="This is a test task for testing selects", point_value=33)
     task2: Task = Task(name="test_select2", description="This is a second value for testing selection", point_value=33)
-    task.insert()
-    task2.insert()
+    task.upsert()
+    task2.upsert()
     print(f"----> {task.name} | {task.updated_at}")
     assert task.id is not None and task.id >= 0
     
