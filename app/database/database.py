@@ -2,34 +2,18 @@ from .models import Task, Schedule
 from .db_consts import SessionLocal, engine, days_of_week
 from sqlmodel import SQLModel, select
 from sqlalchemy.sql.elements import BinaryExpression
+from sqlalchemy import Result
 from typing import Any
 
-def test() -> None:
-    try:
-        task: Task = Task(name="Take out trash", point_value=1)
-        task.upsert()
-    except ValueError as ve:
-        print(ve)
-    
-    tasks: list[Task] = query_tasks(point_values=[1])
-    for t in tasks:
-        print(t)
-        
-    new_task = list(filter(lambda x: x.name == "Take out trash", tasks))[0]
-    new_task.name = "Take out trash on Thursday"
-    new_task.point_value = 2
-    print()
-    print(new_task)
-    new_task.upsert()
-    
-    task = Task(description="This test is missing a name", point_value=3)
-    task.upsert()
-
-def ensure_list(value: Any) -> list[Any] | None:  # pyright: ignore[reportExplicitAny]
+def ensure_list(value: Any) -> list[Any] | None:
     if value is None:
         return None
     return value if isinstance(value, list) else [value]  # pyright: ignore[reportUnknownVariableType]
 
+def run_query(stmt) -> list[Any]:  # pyright: ignore[reportUnknownParameterType, reportMissingParameterType]
+    with SessionLocal() as session:
+        results: Result[Any] = session.execute(stmt)
+        return list(results.scalars().all())
 
 def query_tasks(
         ids: int | list[int] | None = None, 
@@ -40,45 +24,38 @@ def query_tasks(
     names = ensure_list(names)
     point_values = ensure_list(point_values)
     
-    with SessionLocal() as session:
-        statement = select(Task)
-        filters: list[BinaryExpression[bool]] = []
+    statement = select(Task)
+    filters: list[BinaryExpression[bool]] = []
 
-        if ids:
-            filters.append(Task.id.in_(ids))    # pyright: ignore[reportAttributeAccessIssue, reportUnknownMemberType, reportUnknownArgumentType]
-        if names:
-            filters.append(Task.name.in_(names))  # pyright: ignore[reportAttributeAccessIssue, reportUnknownMemberType, reportUnknownArgumentType]
-        if point_values:
-            filters.append(Task.point_value.in_(point_values))  # pyright: ignore[reportAttributeAccessIssue, reportUnknownMemberType, reportUnknownArgumentType]
+    if ids:
+        filters.append(Task.id.in_(ids))    # pyright: ignore[reportAttributeAccessIssue]
+    if names:
+        filters.append(Task.name.in_(names))  # pyright: ignore[reportAttributeAccessIssue]
+    if point_values:
+        filters.append(Task.point_value.in_(point_values))  # pyright: ignore[reportAttributeAccessIssue]
 
-        if filters:
-            statement = statement.where(*filters)
-            
-        results = session.execute(statement)
-        
-        return list(results.scalars().all())
+    if filters:
+        statement = statement.where(*filters)
+    return run_query(statement)
     
 def query_schedule(task_ids: int|list[int]|None = None, days: days_of_week|list[days_of_week]|None = None):
     days = ensure_list(days)
     task_ids = ensure_list(task_ids)
-    with SessionLocal() as session:
-        statement = select(Schedule)
-        filters: list[BinaryExpression[bool]] = []
-        if task_ids:
-            filters.append(Schedule.task_id.in_(task_ids))  # pyright: ignore[reportAttributeAccessIssue]
-        if days:
-            filters.append(Schedule.day_of_week.in_(days))  # pyright: ignore[reportAttributeAccessIssue]
-        
-        if filters:
-            statement = statement.where(*filters)
-            
-        results = session.execute(statement)
-        return list(results.scalars().all())
+    
+    statement = select(Schedule)
+    filters: list[BinaryExpression[bool]] = []
+    if task_ids:
+        filters.append(Schedule.task_id.in_(task_ids))  # pyright: ignore[reportAttributeAccessIssue]
+    if days:
+        filters.append(Schedule.day_of_week.in_(days))  # pyright: ignore[reportAttributeAccessIssue]
+    
+    if filters:
+        statement = statement.where(*filters)        
+    return run_query(statement)
         
 
 def main() -> None:
     SQLModel.metadata.create_all(engine)
-    test()
 
 if __name__ == "__main__":
     main()

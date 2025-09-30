@@ -2,17 +2,15 @@ import logging
 from .db_consts import SessionLocal, days_of_week
 from datetime import datetime, timezone
 from typing import override
-from pydantic import StrictInt, field_validator, validator
+from pydantic import StrictInt
 from sqlmodel import SQLModel, Field, CheckConstraint, Column, VARCHAR, DateTime, text
 from sqlalchemy.exc import IntegrityError
-from sqlalchemy.schema import FetchedValue
 
 class BaseModel(SQLModel):
     id: int = Field(default=None, primary_key=True)
     created_at: datetime = Field(
         default_factory=lambda: datetime.now(timezone.utc)
     )
-    
 
     def upsert(self) -> None:
         try:
@@ -39,7 +37,6 @@ class Task(BaseModel, table=True):
             onupdate=None
         )
     )
-
     __table_args__: tuple[object] = (CheckConstraint("typeof(point_value) = 'integer'", name="check_point_value_int"), )
     
     @override
