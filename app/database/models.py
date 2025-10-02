@@ -22,7 +22,12 @@ class BaseModel(SQLModel):
         except IntegrityError as ie:
             logging.warning(f"Integrity error while upserting {self}. Error: {ie}")
             raise
-    
+
+class User(BaseModel, table=True):
+    __tablename__ = "users"  # pyright: ignore[reportAssignmentType]
+    name: str = Field(sa_column=Column("name", VARCHAR, index=True, nullable=False))
+    email: str = Field(sa_column=Column("email", VARCHAR, unique=True, index=True, nullable=False))
+
 class Task(BaseModel, table=True):    
     name: str = Field(sa_column=Column("name", VARCHAR, unique=True, index=True, nullable=False))
     description: str|None = None
